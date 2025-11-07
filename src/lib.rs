@@ -1,3 +1,4 @@
+use md5;
 use pyo3::prelude::*;
 
 // takes a string slice and returns a string
@@ -10,11 +11,12 @@ fn convert_to_sql(line: &str) -> String {
             splitted[3] = correct_date_short(&splitted[3]);
             splitted[4] = correct_date_long(&splitted[4]);
             splitted[5] = correct_date_long(&splitted[5]);
+            splitted[1] = md5_encode(&splitted[1]);
+            splitted[2] = md5_encode(&splitted[2]);
             generate_sql_string(splitted)
         })
         .unwrap_or_default()
 }
-
 
 //helper function for formatting date string
 fn correct_date_short(date: &str) -> String {
@@ -64,6 +66,14 @@ fn generate_sql_string(list: Vec<String>) -> String {
     );
     sql.push_str(substr.as_str());
     sql
+}
+
+//helper function for generating md5 hash
+fn md5_encode(input: &str) -> String {
+    let digest = md5::compute(input.as_bytes());
+    // hex encode
+    let hex = format!("{:x}", digest);
+    hex
 }
 
 // Python module falliste_rust with function convert_to_sql implemented in Rust
