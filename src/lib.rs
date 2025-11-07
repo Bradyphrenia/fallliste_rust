@@ -1,6 +1,6 @@
 use pyo3::prelude::*;
 
-/// Formats the sum of two numbers as string.
+// takes a string slice and returns a string
 #[pyfunction]
 fn convert_to_sql(line: &str) -> String {
     Some(line)
@@ -16,7 +16,7 @@ fn convert_to_sql(line: &str) -> String {
 }
 
 
-
+//helper function for formatting date string
 fn correct_date_short(date: &str) -> String {
     let parts: Vec<&str> = date.trim().split('.').collect();
     if parts.len() != 3 {
@@ -25,6 +25,7 @@ fn correct_date_short(date: &str) -> String {
     format!("{}-{}-{}", parts[2], parts[1], parts[0])
 }
 
+//helper function for formatting date string
 fn correct_date_long(date: &str) -> String {
     let corrected = date.to_string();
     let mut parts = corrected
@@ -40,9 +41,10 @@ fn correct_date_long(date: &str) -> String {
     date_new
 }
 
+//helper function for generating sql string
 fn generate_sql_string(list: Vec<String>) -> String {
     let mut sql = String::new();
-    sql.push_str("INSERT INTO fallliste (\"Fallnummer\", \"Nachname\", \"Vorname\", \"Geburtsdatum\", \"Aufnahme\", \"Entlassung\", \"Behandlungstage  gesamt\", \"DRG Nr\", \"untere Grenzverweildauer\", \"mittlere Verweildauer\", \"obere Grenzverweildauer\", \"Hauptfachabteilung\", \"Fachabteilung\", \"Station\")");
+    sql.push_str("INSERT INTO fallliste_voll (\"Fallnummer\", \"Nachname\", \"Vorname\", \"Geburtsdatum\", \"Aufnahme\", \"Entlassung\", \"Behandlungstage  gesamt\", \"DRG Nr\", \"untere Grenzverweildauer\", \"mittlere Verweildauer\", \"obere Grenzverweildauer\", \"Hauptfachabteilung\", \"Fachabteilung\", \"Station\")");
     let substr = format!(
         " VALUES ('{}', '{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}');",
         list[0],
@@ -64,7 +66,7 @@ fn generate_sql_string(list: Vec<String>) -> String {
     sql
 }
 
-/// A Python module implemented in Rust.
+// Python module falliste_rust with function convert_to_sql implemented in Rust
 #[pymodule]
 fn fallliste_rust(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(convert_to_sql, m)?)?;
