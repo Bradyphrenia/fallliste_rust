@@ -10,12 +10,19 @@ fn sql_part_falliste(py: Python<'_>, line: Vec<String>) -> PyResult<PyObject> {
         return Ok(PyTuple::empty_bound(py).into_py(py));
     }
     let remove_single_quotes = |x: &str| x.trim().replace("'", "");
-    let mut v = line;
+    let remove_double_quotes = |x: &str| x.trim().replace("\"", "");
+    let mut v: Vec<String> = line
+        .iter()
+        .map(|x| {
+            remove_double_quotes(x);
+            remove_single_quotes(x)
+        })
+        .collect();
     v[3] = correct_date_short(&v[3]);
     v[4] = correct_date_long(&v[4]);
     v[5] = correct_date_long(&v[5]);
-    v[1] = md5_encode(&remove_single_quotes(&v[1]));
-    v[2] = md5_encode(&remove_single_quotes(&v[2]));
+    v[1] = md5_encode(&v[1]);
+    v[2] = md5_encode(&v[2]);
     v[0] = v[0].chars().take(8).collect();
 
     let convert_to_int = |x: &str| x.trim().parse::<i64>().unwrap_or(0);
