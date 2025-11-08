@@ -1,9 +1,10 @@
 use md5;
-use pyo3::prelude::*;
+use pyo3::{prelude::*, types::PyTuple, PyObject};
 
-// takes a string slice and returns a string
+
+// takes a string slice and returns a Python tuple
 #[pyfunction]
-fn convert_to_sql(line: &str) -> String {
+fn sql_part(line: &str) -> PyResult<PyObject> {
     Some(line)
         .map(|l| l.split(';').map(str::to_owned).collect::<Vec<_>>())
         .filter(|splitted| splitted.len() == 46 && splitted[0] != "Summe")
@@ -13,9 +14,9 @@ fn convert_to_sql(line: &str) -> String {
             splitted[5] = correct_date_long(&splitted[5]);
             splitted[1] = md5_encode(&splitted[1]);
             splitted[2] = md5_encode(&splitted[2]);
-            generate_sql_string(splitted)
+            return_tuple(splitted)
         })
-        .unwrap_or_default()
+        .unwrap()
 }
 
 //helper function for formatting date string
@@ -42,6 +43,27 @@ fn correct_date_long(date: &str) -> String {
     let date_new = format!("{} {}", parts[0], parts[1]);
     date_new
 }
+fn return_tuple(list: Vec<String>) -> PyResult<PyObject>{
+    let tuple = (
+        items.get(0).unwrap().to_owned(),
+        items.get(1).unwrap().to_owned(),
+        items.get(2).unwrap().to_owned(),
+        items.get(3).unwrap().to_owned(),
+        items.get(4).unwrap().to_owned(),
+        items.get(5).unwrap().to_owned(),
+        items.get(6).unwrap().to_owned(),
+        items.get(7).unwrap().to_owned(),
+        items.get(8).unwrap().to_owned(),
+        items.get(9).unwrap().to_owned(),
+        items.get(10).unwrap().to_owned(),
+        items.get(11).unwrap().to_owned(),
+        items.get(12).unwrap().to_owned(),
+        items.get(13).unwrap().to_owned(),
+    );
+    Ok(tuple.into_py(py))
+}
+
+
 
 //helper function for generating sql string
 fn generate_sql_string(list: Vec<String>) -> String {
