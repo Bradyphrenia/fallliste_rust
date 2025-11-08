@@ -2,6 +2,7 @@
 name = "fallliste_rust"
 version = "0.1.0"
 edition = "2021"
+rust-version = "1.70"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
@@ -9,5 +10,5 @@ name = "fallliste_rust"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = "0.19.0"
+pyo3 = { version = "0.21.2", features = ["extension-module"] }
 md5 = "0.7"

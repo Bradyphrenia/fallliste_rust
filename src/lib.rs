@@ -1,21 +1,26 @@
 use md5;
-use pyo3::{prelude::*, PyObject};
+use pyo3::prelude::*;
+use pyo3::types::PyTuple;
 
-// takes a string slice and returns a Python tuple
+// takes a string slice and returns a Python tuple or None
 #[pyfunction]
-fn sql_part_falliste(line: &str) -> PyResult<PyObject> {
-    Some(line)
-        .map(|l| l.split(';').map(str::to_owned).collect::<Vec<_>>())
-        .filter(|splitted| splitted.len() == 46 && splitted[0] != "Summe")
-        .map(|mut splitted| {
-            splitted[3] = correct_date_short(&splitted[3]);
-            splitted[4] = correct_date_long(&splitted[4]);
-            splitted[5] = correct_date_long(&splitted[5]);
-            splitted[1] = md5_encode(&splitted[1]);
-            splitted[2] = md5_encode(&splitted[2]);
-            return_tuple(splitted)
-        })
-        .unwrap()
+fn sql_part_falliste(py: Python<'_>, line: &str) -> PyResult<Option<PyObject>> {
+    let mut splitted: Vec<String> = line.split(';').map(str::to_owned).collect();
+
+    if splitted.len() != 46 || splitted.get(0).map(|s| s.as_str()) == Some("Summe") {
+        return Ok(None);
+    }
+
+    // transform fields
+    splitted[3] = correct_date_short(&splitted[3]);
+    splitted[4] = correct_date_long(&splitted[4]);
+    splitted[5] = correct_date_long(&splitted[5]);
+    splitted[1] = md5_encode(&splitted[1]);
+    splitted[2] = md5_encode(&splitted[2]);
+
+    let items = splitted.into_iter().map(|s| s.into_py(py));
+    let tuple = PyTuple::new_bound(py, items);
+    Ok(Some(tuple.into()))
 }
 
 //helper function for formatting date string
@@ -24,64 +29,35 @@ fn correct_date_short(date: &str) -> String {
     if parts.len() != 3 {
         return String::new();
     }
-    format!("{}-{}-{}", parts[2], parts[1], parts[0])
+    let (d, m, y) = (parts[0].trim(), parts[1].trim(), parts[2].trim());
+    if d.is_empty() || m.is_empty() || y.is_empty() {
+        return String::new();
+    }
+    format!("{}-{}-{}", y, m, d)
 }
 
 //helper function for formatting date string
 fn correct_date_long(date: &str) -> String {
-    let corrected = date.to_string();
-    let mut parts = corrected
-        .split(' ')
+    let mut parts = date
+        .splitn(2, ' ')
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
     if parts.len() != 2 {
-        return "".to_string();
+        return String::new();
     }
-    let ds = parts[0].as_str();
-    parts[0] = correct_date_short(ds.trim());
-    let date_new = format!("{} {}", parts[0], parts[1]);
-    date_new
-}
-//helper function for converting a list to tuple
-fn return_tuple(list: Vec<String>) -> PyResult<PyObject> {
-    if list.len() != 14 {
-        return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
-            "Erwartete Länge {}, erhalten {}",
-            14,
-            list.len()
-        )));
-    }
-
-    let tuple = (
-        list[0].unwrap().to_owned(),
-        list[1].unwrap().to_owned(),
-        list[2].unwrap().to_owned(),
-        list[3].unwrap().to_owned(),
-        list[4].unwrap().to_owned(),
-        list[5].unwrap().to_owned(),
-        list[6].unwrap().to_owned(),
-        list[7].unwrap().to_owned(),
-        list[8].unwrap().to_owned(),
-        list[9].unwrap().to_owned(),
-        list[10].unwrap().to_owned(),
-        list[11].unwrap().to_owned(),
-        list[12].unwrap().to_owned(),
-        list[13].unwrap().to_owned(),
-    );
-    Ok(tuple.into_py(py))
+    parts[0] = correct_date_short(parts[0].trim());
+    format!("{} {}", parts[0], parts[1])
 }
 
 //helper function for generating md5 hash
 fn md5_encode(input: &str) -> String {
     let digest = md5::compute(input.as_bytes());
-    // hex encode
-    let hex = format!("{:x}", digest);
-    hex
+    format!("{:x}", digest)
 }
 
-// Python module falliste_rust with function convert_to_sql implemented in Rust
+// Python module fallliste_rust with function sql_part_falliste implemented in Rust
 #[pymodule]
-fn fallliste_rust(_py: Python, m: &PyModule) -> PyResult<()> {
+fn fallliste_rust(_py: Python<'_>, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sql_part_falliste, m)?)?;
     Ok(())
 }
