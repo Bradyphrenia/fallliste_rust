@@ -42,8 +42,16 @@ fn correct_date_long(date: &str) -> String {
     let date_new = format!("{} {}", parts[0], parts[1]);
     date_new
 }
-//helper function for converting list to tuple
+//helper function for converting a list to tuple
 fn return_tuple(list: Vec<String>) -> PyResult<PyObject> {
+    if list.len() != 14 {
+        return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+            "Erwartete Länge {}, erhalten {}",
+            14,
+            list.len()
+        )));
+    }
+
     let tuple = (
         list[0].unwrap().to_owned(),
         list[1].unwrap().to_owned(),
@@ -61,31 +69,6 @@ fn return_tuple(list: Vec<String>) -> PyResult<PyObject> {
         list[13].unwrap().to_owned(),
     );
     Ok(tuple.into_py(py))
-}
-
-//helper function for generating sql string
-fn generate_sql_string(list: Vec<String>) -> String {
-    let mut sql = String::new();
-    sql.push_str("INSERT INTO fallliste_voll (\"Fallnummer\", \"Nachname\", \"Vorname\", \"Geburtsdatum\", \"Aufnahme\", \"Entlassung\", \"Behandlungstage  gesamt\", \"DRG Nr\", \"untere Grenzverweildauer\", \"mittlere Verweildauer\", \"obere Grenzverweildauer\", \"Hauptfachabteilung\", \"Fachabteilung\", \"Station\")");
-    let substr = format!(
-        " VALUES ('{}', '{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}','{}');",
-        list[0],
-        list[1],
-        list[2],
-        list[3],
-        list[4],
-        list[5],
-        list[6],
-        list[7],
-        list[11],
-        list[15],
-        list[22],
-        list[31],
-        list[32],
-        list[33]
-    );
-    sql.push_str(substr.as_str());
-    sql
 }
 
 //helper function for generating md5 hash
