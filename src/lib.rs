@@ -1,10 +1,9 @@
 use md5;
-use pyo3::{prelude::*, types::PyTuple, PyObject};
-
+use pyo3::{prelude::*, PyObject};
 
 // takes a string slice and returns a Python tuple
 #[pyfunction]
-fn sql_part(line: &str) -> PyResult<PyObject> {
+fn sql_part_falliste(line: &str) -> PyResult<PyObject> {
     Some(line)
         .map(|l| l.split(';').map(str::to_owned).collect::<Vec<_>>())
         .filter(|splitted| splitted.len() == 46 && splitted[0] != "Summe")
@@ -43,27 +42,26 @@ fn correct_date_long(date: &str) -> String {
     let date_new = format!("{} {}", parts[0], parts[1]);
     date_new
 }
-fn return_tuple(list: Vec<String>) -> PyResult<PyObject>{
+//helper function for converting list to tuple
+fn return_tuple(list: Vec<String>) -> PyResult<PyObject> {
     let tuple = (
-        items.get(0).unwrap().to_owned(),
-        items.get(1).unwrap().to_owned(),
-        items.get(2).unwrap().to_owned(),
-        items.get(3).unwrap().to_owned(),
-        items.get(4).unwrap().to_owned(),
-        items.get(5).unwrap().to_owned(),
-        items.get(6).unwrap().to_owned(),
-        items.get(7).unwrap().to_owned(),
-        items.get(8).unwrap().to_owned(),
-        items.get(9).unwrap().to_owned(),
-        items.get(10).unwrap().to_owned(),
-        items.get(11).unwrap().to_owned(),
-        items.get(12).unwrap().to_owned(),
-        items.get(13).unwrap().to_owned(),
+        list[0].unwrap().to_owned(),
+        list[1].unwrap().to_owned(),
+        list[2].unwrap().to_owned(),
+        list[3].unwrap().to_owned(),
+        list[4].unwrap().to_owned(),
+        list[5].unwrap().to_owned(),
+        list[6].unwrap().to_owned(),
+        list[7].unwrap().to_owned(),
+        list[8].unwrap().to_owned(),
+        list[9].unwrap().to_owned(),
+        list[10].unwrap().to_owned(),
+        list[11].unwrap().to_owned(),
+        list[12].unwrap().to_owned(),
+        list[13].unwrap().to_owned(),
     );
     Ok(tuple.into_py(py))
 }
-
-
 
 //helper function for generating sql string
 fn generate_sql_string(list: Vec<String>) -> String {
@@ -101,6 +99,6 @@ fn md5_encode(input: &str) -> String {
 // Python module falliste_rust with function convert_to_sql implemented in Rust
 #[pymodule]
 fn fallliste_rust(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(convert_to_sql, m)?)?;
+    m.add_function(wrap_pyfunction!(sql_part_falliste, m)?)?;
     Ok(())
 }
