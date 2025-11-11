@@ -12,3 +12,9 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.21.2", features = ["extension-module"] }
 md5 = "0.7"
+
+[profile.release]
+opt-level = 3         # Default for --release
+lto = "fat"           # Link Time Optimization (reduces size and may speed up)
+codegen-units = 1     # Slower compile, faster runtime
+strip = true          # Removes symbols from final binary
