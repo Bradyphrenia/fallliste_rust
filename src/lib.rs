@@ -1,52 +1,58 @@
 use md5;
 use pyo3::prelude::*;
 use pyo3::types::PyTuple;
+use std::mem;
 
-// takes a list and returns a Python tuple
 #[pyfunction]
-fn sql_part_falliste(py: Python<'_>, line: Vec<String>) -> PyResult<PyObject> {
+fn sql_part_falliste(py: Python<'_>, mut line: Vec<String>) -> PyResult<PyObject> {
     if line.len() != 46 || line[0] == "Summe" {
-        //return empty tuple
         return Ok(PyTuple::empty_bound(py).into_py(py));
     }
-    let remove_single_quotes = |x: &str| x.trim().replace("'", "");
-    let remove_double_quotes = |x: &str| x.trim().replace("\"", "");
-    let mut v: Vec<String> = line
-        .iter()
-        .map(|x| {
-            remove_double_quotes(x);
-            remove_single_quotes(x)
-        })
-        .collect();
-    v[3] = correct_date_short(&v[3]);
-    v[4] = correct_date_long(&v[4]);
-    v[5] = correct_date_long(&v[5]);
-    v[1] = md5_encode(&v[1]);
-    v[2] = md5_encode(&v[2]);
-    v[0] = v[0].chars().take(8).collect();
 
-    let convert_to_int = |x: &str| x.trim().parse::<i64>().unwrap_or(0);
-    let items = vec![
-        v[0].clone().into_py(py),
-        v[1].clone().into_py(py),
-        v[2].clone().into_py(py),
-        v[3].clone().into_py(py),
-        v[4].clone().into_py(py),
-        v[5].clone().into_py(py),
-        convert_to_int(&v[6]).into_py(py),
-        v[7].clone().into_py(py),
-        v[11].clone().into_py(py),
-        v[15].clone().into_py(py),
-        v[22].clone().into_py(py),
-        v[31].clone().into_py(py),
-        v[32].clone().into_py(py),
-        v[33].clone().into_py(py),
+    // Sanitize all fields in-place: trim and remove both quote types in one pass.
+    for s in &mut line {
+        // Trim (may allocate if we want to own the trimmed content)
+        let trimmed = s.trim();
+        if trimmed.len() != s.len() {
+            *s = trimmed.to_owned();
+        }
+        // Remove quotes in-place without allocating a new String
+        // (this keeps capacity; much cheaper than replace)
+        s.retain(|c| c != '\'' && c != '"');
+    }
+
+    // Transform selected fields
+    line[3] = correct_date_short(&line[3]);
+    line[4] = correct_date_long(&line[4]);
+    line[5] = correct_date_long(&line[5]);
+    line[1] = md5_encode(&line[1]);
+    line[2] = md5_encode(&line[2]);
+    // v[0] = v[0].chars().take(8).collect();
+    line[0] = line[0].chars().take(8).collect();
+
+    let parse_i64 = |x: &str| x.trim().parse::<i64>().unwrap_or(0);
+
+    // Move (not clone) owned Strings into Python objects where possible
+    let items: [PyObject; 14] = [
+        mem::take(&mut line[0]).into_py(py), // move
+        mem::take(&mut line[1]).into_py(py),
+        mem::take(&mut line[2]).into_py(py),
+        mem::take(&mut line[3]).into_py(py),
+        mem::take(&mut line[4]).into_py(py),
+        mem::take(&mut line[5]).into_py(py),
+        parse_i64(&line[6]).into_py(py), // cheap copy
+        mem::take(&mut line[7]).into_py(py),
+        mem::take(&mut line[11]).into_py(py),
+        mem::take(&mut line[15]).into_py(py),
+        mem::take(&mut line[22]).into_py(py),
+        mem::take(&mut line[31]).into_py(py),
+        mem::take(&mut line[32]).into_py(py),
+        mem::take(&mut line[33]).into_py(py),
     ];
-    // generate a Python tuple from the tuple
-    Python::with_gil(|py| Ok(PyTuple::new_bound(py, items).into_py(py)))
+
+    Ok(PyTuple::new_bound(py, &items).into_py(py))
 }
 
-//helper function for formatting date string
 fn correct_date_short(date: &str) -> String {
     let parts: Vec<&str> = date.trim().split('.').collect();
     if parts.len() != 3 {
@@ -55,20 +61,18 @@ fn correct_date_short(date: &str) -> String {
     format!("{}-{}-{}", parts[2], parts[1], parts[0])
 }
 
-//helper function for formatting date string
 fn correct_date_long(date: &str) -> String {
     let mut parts = date
         .split(' ')
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
     if parts.len() != 2 {
-        return "".to_string();
+        return String::new();
     }
     parts[0] = correct_date_short(parts[0].trim());
     format!("{} {}", parts[0], parts[1])
 }
 
-//helper function for generating md5 hash
 fn md5_encode(input: &str) -> String {
     let digest = md5::compute(input.as_bytes());
     format!("{:x}", digest)
