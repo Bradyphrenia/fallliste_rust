@@ -17,4 +17,4 @@ md5 = "0.7"
 opt-level = 3         # Default for --release
 lto = "fat"           # Link Time Optimization (reduces size and may speed up)
 codegen-units = 1     # Slower compile, faster runtime
-strip = true          # Removes symbols from final binary
+strip = true          # Removes symbols from the final binary
